@@ -1,66 +1,42 @@
 # AGENT_RULES.md
 
-# BrosCode LastCall — Agent Rules (Coding Conventions)
+# BrosCode LastCall — Agent Rules (Authoritative)
 
-These rules are mandatory for any agent or developer making changes in this repo.
+These rules are mandatory for any AI agent or developer making changes in this repository.
+They define architecture, invariants, and acceptable behavior.
+If a request conflicts with these rules, the agent must STOP and ask for clarification.
 
 ---
 
 ## 1) Non-negotiables
 
-1) Do not break build.
-- Every change must end with: dotnet build
-- If tests exist: dotnet test
+1. Do not break the build  
+   - Every change must end with `dotnet build`  
+   - If tests exist, also run `dotnet test`
 
-2) No circular dependencies.
-- Follow ARCHITECTURE.md dependency rules exactly.
+2. No circular dependencies  
+   - Follow `ARCHITECTURE.md` dependency rules exactly
 
-3) DTO-only at boundaries.
-- Controllers accept and return DTOs only.
-- API contracts must never expose EF Entities.
+3. DTO-only at boundaries  
+   - Controllers accept and return DTOs only  
+   - EF entities must never be exposed as API contracts
 
-4) Standard CRUD flow is mandatory.
-- Controller -> Business Service -> UnitOfWork/Repository -> Entity
-- Mapping happens in the Business layer using AutoMapper.
+4. Standard request flow is mandatory  
+   - Controller → Business Service → UnitOfWork / Repository → Entity  
+   - Mapping occurs in the Business layer using AutoMapper
 
-5) BaseEntity and BaseDto invariants are mandatory.
-- All persisted entities MUST inherit BaseEntity.
-- All DTOs that map directly to entities MUST inherit BaseDto (directly or indirectly). BaseDto is the required root for entity-backed DTOs.
+5. Infrastructure is dependency-free  
+   - Infrastructure must not reference Api, Business, or Entity
 
-6) RowVersion concurrency configuration is mandatory.
-- Every persisted entity MUST have its RowVersion configured as IsRowVersion() in OnModelCreating.
-- The agent must use one consistent approach:
-  - Preferred: generic configuration applied to all BaseEntity-derived entity types (single implementation).
-  - Allowed: explicit per-entity Property(x => x.RowVersion).IsRowVersion() lines, but the agent must keep them complete (no missing entity).
-
-7) Elegant EF composition rule is mandatory.
-- The API must not call UseNpgsql directly.
-- The Entity project must expose an IServiceCollection extension method that registers:
-  - DbContext
-  - provider (UseNpgsql)
-  - any Entity-layer services (UnitOfWork, repositories)
-- The API calls that extension method in Program.cs.
-
-8) API -> Entity reference is allowed only for composition root.
-- Allowed uses:
-  - calling the Entity DI extension method
-  - EF CLI usage where Api is startup project and Entity is migration project
-- Not allowed:
-  - controllers calling repositories/UnitOfWork directly
-  - entities used as API payloads
-
-9) Infrastructure is dependency-free.
-- Infrastructure must not reference Api, Business, or Entity.
-
-10) No secrets in source control.
-- Use environment variables, user-secrets, or local-only appsettings.Development.json excluded from git.
+6. No secrets in source control  
+   - Use environment variables, user-secrets, or excluded local config files
 
 ---
 
-## 2) Naming & structure
+## 2) Project structure invariants
 
-Company: BrosCode
-App: LastCall
+Company: BrosCode  
+Application: LastCall  
 
 Projects:
 - BrosCode.LastCall.Api
@@ -68,101 +44,167 @@ Projects:
 - BrosCode.LastCall.Entity
 - BrosCode.LastCall.Infrastructure
 
-Namespaces must match project names and folders.
+Namespaces must match project and folder structure.
 
 ---
 
-## 3) BaseEntity rule (persistence invariant)
+## 3) API endpoint architecture rules
 
-Every EF Core entity class that is persisted MUST inherit BaseEntity.
+### Controllers vs Minimal APIs
 
-BaseEntity establishes:
-- Guid Id primary key
-- Audit fields (CreatedBy, CreatedDate, ModifiedBy, ModifiedDate)
-- Optimistic concurrency token RowVersion (uint?)
+- This repository uses **controller-based MVC APIs**
+- **Minimal APIs are NOT allowed** unless explicitly requested
 
-Agent must NOT:
-- Create an entity that does not inherit BaseEntity
-- Recreate audit fields per entity
-- Replace concurrency with SQL Server rowversion patterns
+When a task mentions:
+- “controller”
+- “Controllers folder”
+- “controller-based API”
+- “move endpoints to controllers”
+
+The agent MUST:
+- Remove or avoid all minimal API endpoint mappings
+- Configure the application so **controllers are the only HTTP endpoint mechanism**
+- Use the standard ASP.NET MVC controller pipeline
+
+The agent MUST NOT:
+- Keep or add `MapGet`, `MapPost`, or other minimal API route mappings
+- Mix minimal APIs and controllers
+- Introduce hybrid endpoint models
 
 ---
 
-## 4) BaseDto rule (business invariant)
+## 4) Program.cs responsibilities
 
-Every DTO that maps directly to a persisted entity MUST inherit BaseDto.
+`Program.cs` is responsible only for:
+- Hosting
+- Dependency injection
+- Middleware
+- API surface wiring
 
-BaseDto establishes:
-- Guid Id
-- uint? RowVersion
+Rules:
+- No business endpoints in `Program.cs`
+- Endpoints live only in controller classes under `Controllers/`
+- Framework-level wiring is expected knowledge and must not require explicit user instruction
+
+---
+
+## 5) OpenAPI rules
+
+- Existing OpenAPI configuration must be preserved exactly unless explicitly instructed otherwise
+- The agent must NOT:
+  - Replace OpenAPI with Swagger
+  - Add Swagger UI
+  - Add new OpenAPI-related packages
+- Controllers must be automatically included in the existing OpenAPI surface
+
+---
+
+## 6) BaseEntity rule (persistence invariant)
+
+All persisted entities MUST inherit `BaseEntity`.
+
+`BaseEntity` defines:
+- `Guid Id` as primary key
+- Audit fields (`CreatedBy`, `CreatedDate`, `ModifiedBy`, `ModifiedDate`)
+- Optimistic concurrency token `RowVersion` (`uint?`)
+
+The agent must NOT:
+- Create persisted entities that do not inherit `BaseEntity`
+- Re-declare audit fields on individual entities
+- Use SQL Server–style `rowversion` patterns
+
+---
+
+## 7) RowVersion concurrency rule
+
+- Every persisted entity MUST have its `RowVersion` configured as `IsRowVersion()` in `OnModelCreating`
+- The agent must use **one consistent approach**:
+  - Preferred: a generic configuration applied to all `BaseEntity`-derived types
+  - Allowed: explicit per-entity configuration, but it must be complete (no omissions)
+
+Missing concurrency configuration is considered a defect.
+
+---
+
+## 8) BaseDto rule (business invariant)
+
+All DTOs that map directly to persisted entities MUST inherit `BaseDto`
+(either directly or through a DTO inheritance chain).
+
+`BaseDto` defines:
+- `Guid Id`
+- `uint? RowVersion`
 - Audit fields ignored for JSON serialization
 
-DTO hierarchies are allowed if the chain includes BaseDto.
+DTO hierarchies are allowed as long as `BaseDto` exists in the chain.
 
 ---
 
-## 5) Mapping rules (AutoMapper)
+## 9) Mapping rules
 
-- AutoMapper lives in Business.
+- AutoMapper lives in the Business project
 - Every entity-backed DTO must have:
-  - Entity -> DTO mapping (reads)
-  - DTO -> Entity mapping (writes)
-
-Never map navigation graphs blindly. Use explicit DTO shape and explicit Includes.
-
----
-
-## 6) Repository + UnitOfWork rules
-
-- All persistence operations go through UnitOfWork + Repository.
-- Controllers never call DbContext/Repo directly.
-- Business services call repositories and SaveChanges/SaveChangesAsync.
+  - Entity → DTO mapping (read)
+  - DTO → Entity mapping (write)
+- Do not map navigation graphs implicitly
+- Queries must explicitly control shape and includes
 
 ---
 
-## 7) Validation rules
+## 10) Repository & UnitOfWork rules
 
-- Use FluentValidation.
-- Validate DTOs in the Business layer.
-- Controllers do not contain business validation logic.
-
----
-
-## 8) Seeding rules (JSON seed framework)
-
-Seed data is stored as JSON files and applied using EF Core HasData.
-
-Seed file convention:
-- Location: Api/Seed/
-- Name: <EntityName>.json
-
-Seeding behavior:
-- During model creation, seeding reads the JSON file for the entity type and calls HasData.
-- If the file does not exist, seeding is skipped without failing.
+- All persistence operations go through Repository + UnitOfWork
+- Controllers must never call DbContext or repositories directly
+- Business services own persistence orchestration
 
 ---
 
-## 9) Audit rules
+## 11) API → Entity reference exception
 
-Audit is enforced at DbContext SaveChanges / SaveChangesAsync:
-- For Added entities: set CreatedDate
-- For Added and Modified entities: set ModifiedDate
+The Api project may reference the Entity project **only** for:
+- Calling Entity DI extension methods
+- EF Core CLI usage where Api is the startup project
 
-Audit fields are not set manually in controllers.
+The Api project must NOT:
+- Call repositories or UnitOfWork directly
+- Implement persistence logic
+- Use entity types as API payloads
 
 ---
 
-## 10) Agent execution checklist (required)
+## 12) Seeding rules
 
-For any change request like: “add entity”, “add service”, “run migrations”, the agent must:
+- Seed data is defined via JSON files
+- Location: `Api/Seed/`
+- File naming: `<EntityName>.json`
 
-1) Make changes only in correct layer(s)
-2) Create/modify entity and DTO following BaseEntity/BaseDto rules
-3) Ensure RowVersion IsRowVersion configuration is applied (generic preferred)
-4) Add or update AutoMapper mapping
-5) Add or update validator
-6) Update DbContext and EF configurations
-7) Add migration and apply database update when schema changes
-8) dotnet build
-9) dotnet test (if present)
-10) Summarize what changed and what commands were executed
+Behavior:
+- Seed files are loaded during model creation using `HasData`
+- Missing seed files are skipped without failure
+
+---
+
+## 13) Audit rules
+
+Audit is enforced at DbContext level:
+- Added entities: set `CreatedDate`
+- Added and modified entities: set `ModifiedDate`
+
+Audit fields must not be manually set in controllers.
+
+---
+
+## 14) Agent execution checklist
+
+For any task such as “add entity”, “add service”, or “run migrations”, the agent must:
+
+1. Modify only the correct layer(s)
+2. Enforce `BaseEntity` / `BaseDto` rules
+3. Ensure `RowVersion` is configured correctly
+4. Add or update AutoMapper mappings
+5. Add or update validators if applicable
+6. Update DbContext configuration
+7. Run migrations if schema changes
+8. Run `dotnet build`
+9. Run `dotnet test` if tests exist
+10. Report what changed and what commands were executed
