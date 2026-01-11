@@ -2,160 +2,215 @@
 
 # BrosCode LastCall — Architecture & Dependency Rules
 
-This repo uses a 4-project architecture with strict dependency rules and a DTO-first boundary.
-The Api project is the composition root and wires DI, but business logic stays in Business.
+This document defines the architectural layout, responsibilities, and dependency rules
+for the BrosCode LastCall solution. It must be followed exactly.
+
+If this document conflicts with other guidance, defer to AGENT_RULES.md.
 
 ---
 
-## 1) Solution layout
+## 1. Solution overview
 
-Repo root:
-- README.md
-- AGENT_RULES.md
-- ARCHITECTURE.md
-- TASK_PLAYBOOK.md
-- src/
-- tests/ (optional)
+The solution uses a **5-project layered architecture** with strict dependency rules
+and a **contracts-first boundary**.
 
-Solution path:
-- src/BrosCode.LastCall.sln
+Projects:
 
-Projects under src/:
 - BrosCode.LastCall.Api
 - BrosCode.LastCall.Business
+- BrosCode.LastCall.Contracts
 - BrosCode.LastCall.Entity
 - BrosCode.LastCall.Infrastructure
 
+The Api project is the **composition root**.
+Business owns orchestration and mapping.
+Contracts define all DTO boundaries.
+Entity owns persistence.
+Infrastructure contains reusable, dependency-free utilities.
+
 ---
 
-## 2) Project responsibilities
+## 2. Project responsibilities
 
 ### BrosCode.LastCall.Api
-Purpose: host application, HTTP endpoints, middleware, bootstrapping.
+
+Purpose:
+- Host the application
+- Expose HTTP endpoints
+- Configure middleware and DI
+- Expose OpenAPI + Scalar API Reference UI
 
 Contains:
 - Program.cs
 - Controllers
 - Middleware
-- Seed JSON files under Seed/
-- API pipeline configuration (Swagger/OpenAPI, auth, CORS, etc.)
+- API-level configuration
+- Seed JSON files (if used)
 
-Composition root rule:
-- Api wires dependencies by calling DI extension methods from other layers.
-- Api does not contain business logic or persistence logic.
+Rules:
+- No business logic
+- No persistence logic
+- Controllers accept/return DTOs only
+- No Swagger or Swashbuckle (Scalar only)
+
+---
 
 ### BrosCode.LastCall.Business
-Purpose: business logic and “DTO language” of the application.
+
+Purpose:
+- Business logic
+- Application orchestration
+- Validation
+- Mapping between Entity and Contracts
 
 Contains:
-- DTOs
+- Services
 - Validators
-- Converters
-- Services (generic CRUD and specialized)
 - AutoMapper profiles
-- SignalR hubs (if used)
+- Business rules
 
-Key rule:
-- DTOs that map directly to persisted entities inherit BaseDto.
+Rules:
+- Business speaks in **Contracts DTOs**
+- Mapping (Entity ↔ DTO) occurs ONLY here
+- Business may reference Entity and Contracts
+- Business may reference Infrastructure
+
+---
+
+### BrosCode.LastCall.Contracts
+
+Purpose:
+- Define the application contract surface (DTOs)
+
+Contains:
+- Request/response DTOs
+- BaseDto
+- Contract enums and lightweight value objects
+
+Rules:
+- No business logic
+- No persistence logic
+- No references to other projects
+- Contracts are shared by Api and Business
+- Entity MUST NOT reference Contracts
+
+---
 
 ### BrosCode.LastCall.Entity
-Purpose: persistence boundary.
+
+Purpose:
+- Persistence boundary
 
 Contains:
-- DbContext and EF Core model configuration
-- Entities (persisted types)
+- DbContext
+- EF Core model configuration
+- Entities
 - Repository pattern
-- Unit of Work pattern
-- EF Core migrations
-- Entity-layer DI extension method (composition hook)
+- Unit of Work
+- Migrations
 
-Key rules:
-- All persisted entities inherit BaseEntity.
-- RowVersion is configured as IsRowVersion() for all persisted entities.
-- Audit timestamps are applied in SaveChanges/SaveChangesAsync.
-- Provider configuration (UseNpgsql) belongs here, not in Api.
+Rules:
+- All persisted entities inherit BaseEntity
+- Default database schema is `app`
+- Table names are plural
+- RowVersion concurrency is enforced
+- Audit fields are set in DbContext
+- Entity may reference Infrastructure
+- Entity MUST NOT reference Contracts or Business
 
-## Entity persistence conventions (Postgres)
+PostgreSQL notes:
+- RowVersion uses Postgres system column `xmin`
+- Seeing `xmin` in migrations is expected
 
-### Schema rule (mandatory)
-- All tables MUST be created under an explicit schema (no implicit `public` tables).
-- Default schema for this app: `app`
-- DbContext MUST set a default schema via `modelBuilder.HasDefaultSchema("app")`.
-- Every entity MUST map to a table in that schema.
-
-### Table naming rule (mandatory)
-- Table names MUST be plural.
-  - Example: `Drink` entity -> `Drinks` table.
-- All tables must be plural (enforced by naming DbSet properties plural), unless explicitly overridden in mappings.
-
-### Concurrency / RowVersion rule (Postgres)
-- Every persisted entity inherits BaseEntity and contains `RowVersion`.
-- RowVersion MUST be configured as a concurrency token (row version).
-- On Postgres, EF/Npgsql uses the system column `xmin` to implement row version concurrency.
-  - Seeing `xmin` in migrations is expected and correct.
+---
 
 ### BrosCode.LastCall.Infrastructure
-Purpose: cross-cutting, reusable code with no dependency on other projects.
+
+Purpose:
+- Cross-cutting utilities and helpers
 
 Contains:
-- Helpers, extensions, utility services
-- General-purpose code that does not reference Api/Business/Entity
+- Extensions
+- Utilities
+- Reusable helpers
 
-Must NOT reference:
-- Api
-- Business
-- Entity
+Rules:
+- Infrastructure MUST NOT reference:
+  - Api
+  - Business
+  - Entity
+  - Contracts
 
 ---
 
-## 3) Allowed project dependencies
+## 3. Allowed dependencies
 
 Allowed:
-- Api -> Business
-- Api -> Entity (composition root only: call DI extension, EF CLI startup project)
-- Business -> Entity
-- Business -> Infrastructure (optional)
-- Entity -> Infrastructure (optional)
 
-Not allowed:
-- Api -> Entity for persistence logic (controllers must not use repos/UoW directly)
-- Api -> Infrastructure (direct) unless explicitly approved for trivial helper
-- Entity -> Business
-- Infrastructure -> anything
+- Api → Business
+- Api → Contracts
+- Api → Entity (composition root only)
+- Business → Contracts
+- Business → Entity
+- Business → Infrastructure
+- Entity → Infrastructure
 
----
+Forbidden:
 
-## 4) Standard request flow (DTO-first)
-
-Read flow:
-- Controller calls Business service
-- Business service queries via UnitOfWork/Repository
-- Entity is mapped to DTO using AutoMapper
-- Controller returns DTO
-
-Write flow:
-- Controller receives DTO
-- Controller calls Business service
-- Business service maps DTO to Entity and persists via UnitOfWork
-- Business service saves changes
-- Controller returns DTO or identifier
+- Contracts → anything
+- Infrastructure → anything
+- Entity → Business
+- Entity → Contracts
+- Api → Infrastructure (unless explicitly approved)
+- Api → Entity for persistence logic
 
 ---
 
-## 5) BaseEntity / BaseDto invariants
+## 4. Standard request flow
 
-BaseEntity:
-- Required base type for all persisted entities (Id + audit + RowVersion)
+### Read flow
+```
+Controller
+  → Business Service
+    → UnitOfWork / Repository
+      → Entity
+    → Map Entity → DTO
+→ Return DTO
+```
 
-BaseDto:
-- Required base type for all DTOs mapped directly to persisted entities (Id + RowVersion + audit hidden from JSON)
+### Write flow
+```
+Controller
+  → DTO
+  → Business Service
+    → Map DTO → Entity
+    → UnitOfWork / Repository
+    → SaveChanges
+→ Return DTO / Id
+```
 
 ---
 
-## 6) Seeding framework
+## 5. Package management
 
-Seed data is defined as JSON files (system data).
-- Seed file location: Api/Seed/
-- File naming: <EntityName>.json
-- Seeding is applied during model creation for entity types that opt-in to seeding.
-- Missing seed files do not fail startup; they are skipped.
+This repository uses **Central Package Management** via `Directory.Packages.props`.
+
+Rules:
+- All NuGet versions live in `Directory.Packages.props`
+- `.csproj` files must contain unversioned PackageReferences only
+- Package versions must never be specified in project files
+
+---
+
+## 6. API reference (OpenAPI)
+
+- OpenAPI is enabled using ASP.NET Core OpenAPI support
+- API reference UI is provided by **Scalar**
+- Swagger / Swashbuckle are not used and must not be added
+
+---
+
+## 7. Enforcement
+
+Architecture violations are defects.
+If a change cannot comply with this document, STOP and ask for clarification.

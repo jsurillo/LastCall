@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BrosCode.LastCall.Business\BrosCode.LastCall.Business.csproj" />
     <ProjectReference Include="..\BrosCode.LastCall.Entity\BrosCode.LastCall.Entity.csproj" />
+    <ProjectReference Include="..\BrosCode.LastCall.Contracts\BrosCode.LastCall.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

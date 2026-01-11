@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BrosCode.LastCall.Entity\BrosCode.LastCall.Entity.csproj" />
     <ProjectReference Include="..\BrosCode.LastCall.Infrastructure\BrosCode.LastCall.Infrastructure.csproj" />
+    <ProjectReference Include="..\BrosCode.LastCall.Contracts\BrosCode.LastCall.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

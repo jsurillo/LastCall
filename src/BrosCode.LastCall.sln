@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrosCode.LastCall.Entity", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrosCode.LastCall.Infrastructure", "BrosCode.LastCall.Infrastructure\BrosCode.LastCall.Infrastructure.csproj", "{2C654261-EE1D-4292-A2F9-36185D6D9418}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrosCode.LastCall.Contracts", "BrosCode.LastCall.Contracts\BrosCode.LastCall.Contracts.csproj", "{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{2C654261-EE1D-4292-A2F9-36185D6D9418}.Release|x64.Build.0 = Release|Any CPU
 		{2C654261-EE1D-4292-A2F9-36185D6D9418}.Release|x86.ActiveCfg = Release|Any CPU
 		{2C654261-EE1D-4292-A2F9-36185D6D9418}.Release|x86.Build.0 = Release|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Debug|x64.Build.0 = Debug|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Debug|x86.Build.0 = Debug|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Release|x64.ActiveCfg = Release|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Release|x64.Build.0 = Release|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Release|x86.ActiveCfg = Release|Any CPU
+		{B8CFF16E-DCF9-4427-832E-9E3DFCCBD354}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

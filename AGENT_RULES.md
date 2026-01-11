@@ -2,225 +2,157 @@
 
 # BrosCode LastCall — Agent Rules (Authoritative)
 
-These rules are mandatory for any AI agent or developer making changes in this repository.
-They define architecture, invariants, and acceptable behavior.
-If a request conflicts with these rules, the agent must STOP and ask for clarification.
+This document defines **non-negotiable rules** for all human and AI contributors.
+If any instruction conflicts with this file, the agent **MUST STOP** and ask for clarification.
+
+This is the highest authority for implementation decisions in this repository.
 
 ---
 
-## 1) Non-negotiables
+## 1. Core invariants
 
-1. Do not break the build  
-   - Every change must end with `dotnet build`  
+1. **Build safety**
+   - Every change MUST end with `dotnet build`
    - If tests exist, also run `dotnet test`
 
-2. No circular dependencies  
-   - Follow `ARCHITECTURE.md` dependency rules exactly
+2. **No circular dependencies**
+   - Project references MUST follow `ARCHITECTURE.md` exactly
 
-3. DTO-only at boundaries  
-   - Controllers accept and return DTOs only  
-   - EF entities must never be exposed as API contracts
+3. **Contracts-first boundaries**
+   - Controllers accept and return DTOs ONLY
+   - DTOs live in `BrosCode.LastCall.Contracts`
+   - EF entities MUST NOT cross layer boundaries
 
-4. Standard request flow is mandatory  
-   - Controller → Business Service → UnitOfWork / Repository → Entity  
-   - Mapping occurs in the Business layer using AutoMapper
+4. **Mandatory request flow**
+   ```
+   Controller → Business → UnitOfWork / Repository → Entity
+   ```
+   - Mapping occurs ONLY in Business
 
-5. Infrastructure is dependency-free  
-   - Infrastructure must not reference Api, Business, or Entity
+5. **Infrastructure isolation**
+   - Infrastructure MUST NOT reference:
+     - Api
+     - Business
+     - Entity
+     - Contracts
 
-6. No secrets in source control  
-   - Use environment variables, user-secrets, or excluded local config files
+6. **No secrets in repository**
+   - Use environment variables, user-secrets, or excluded config files
 
 ---
 
-## 2) Project structure invariants
+## 2. Solution structure (fixed)
 
-Company: BrosCode  
-Application: LastCall  
+The solution MUST contain exactly these projects:
 
-Projects:
 - BrosCode.LastCall.Api
 - BrosCode.LastCall.Business
+- BrosCode.LastCall.Contracts
 - BrosCode.LastCall.Entity
 - BrosCode.LastCall.Infrastructure
 
-Namespaces must match project and folder structure.
-
----
-
-## 3) API endpoint architecture rules
-
-### Controllers vs Minimal APIs
-
-- This repository uses **controller-based MVC APIs**
-- **Minimal APIs are NOT allowed** unless explicitly requested
-
-When a task mentions:
-- “controller”
-- “Controllers folder”
-- “controller-based API”
-- “move endpoints to controllers”
-
-The agent MUST:
-- Remove or avoid all minimal API endpoint mappings
-- Configure the application so **controllers are the only HTTP endpoint mechanism**
-- Use the standard ASP.NET MVC controller pipeline
-
-The agent MUST NOT:
-- Keep or add `MapGet`, `MapPost`, or other minimal API route mappings
-- Mix minimal APIs and controllers
-- Introduce hybrid endpoint models
-
----
-
-## 4) Program.cs responsibilities
-
-`Program.cs` is responsible only for:
-- Hosting
-- Dependency injection
-- Middleware
-- API surface wiring
-
 Rules:
-- No business endpoints in `Program.cs`
-- Endpoints live only in controller classes under `Controllers/`
-- Framework-level wiring is expected knowledge and must not require explicit user instruction
+- No additional projects without explicit approval
+- Namespaces MUST match project and folder structure
 
 ---
 
-## 5) OpenAPI rules
+## 3. Central Package Management (MANDATORY)
 
-- Existing OpenAPI configuration must be preserved exactly unless explicitly instructed otherwise
-- The agent must NOT:
-  - Replace OpenAPI with Swagger
-  - Add Swagger UI
-  - Add new OpenAPI-related packages
-- Controllers must be automatically included in the existing OpenAPI surface
+This repository uses **Central Package Management** via `Directory.Packages.props`.
+
+### Rules
+- ALL NuGet package versions live in `Directory.Packages.props`
+- `.csproj` files MUST NOT contain versioned `PackageReference`
+- Agents MUST NOT introduce `Version="..."` in `.csproj`
+- Agents MUST NOT run:
+  ```
+  dotnet add <project> package <pkg> --version X
+  ```
+
+### Correct process
+1. Add unversioned reference to `.csproj`
+   ```xml
+   <PackageReference Include="Package.Name" />
+   ```
+2. Add or update the version in `Directory.Packages.props`
+3. Run:
+   - `dotnet restore`
+   - `dotnet build`
+
+Violations are defects.
 
 ---
 
-## 6) BaseEntity rule (persistence invariant)
+## 4. API architecture rules
 
+### Controllers only
+- APIs MUST be controller-based MVC
+- Minimal APIs are NOT allowed
+
+Forbidden:
+- `MapGet`, `MapPost`, etc.
+- Hybrid endpoint styles
+
+---
+
+## 5. OpenAPI / API reference
+
+- API reference UI is **Scalar**
+- Swagger and Swashbuckle are explicitly forbidden
+- Use ASP.NET Core OpenAPI + Scalar only
+
+---
+
+## 6. Entity layer rules
+
+### BaseEntity (mandatory)
 All persisted entities MUST inherit `BaseEntity`.
 
 `BaseEntity` defines:
-- `Guid Id` as primary key
-- Audit fields (`CreatedBy`, `CreatedDate`, `ModifiedBy`, `ModifiedDate`)
-- Optimistic concurrency token `RowVersion` (`uint?`)
-
-The agent must NOT:
-- Create persisted entities that do not inherit `BaseEntity`
-- Re-declare audit fields on individual entities
-- Use SQL Server–style `rowversion` patterns
-
----
-
-## 7) RowVersion concurrency rule
-
-- Every persisted entity MUST have its `RowVersion` configured as `IsRowVersion()` in `OnModelCreating`
-- The agent must use **one consistent approach**:
-  - Preferred: a generic configuration applied to all `BaseEntity`-derived types
-  - Allowed: explicit per-entity configuration, but it must be complete (no omissions)
-
-Missing concurrency configuration is considered a defect.
-
----
-
-## 8) BaseDto rule (business invariant)
-
-All DTOs that map directly to persisted entities MUST inherit `BaseDto`
-(either directly or through a DTO inheritance chain).
-
-`BaseDto` defines:
 - `Guid Id`
-- `uint? RowVersion`
-- Audit fields ignored for JSON serialization
+- Audit fields (`Created*`, `Modified*`)
+- `RowVersion` concurrency token
 
-DTO hierarchies are allowed as long as `BaseDto` exists in the chain.
+### Concurrency
+- RowVersion MUST be configured as a concurrency token
+- Prefer a generic configuration applied to all BaseEntity-derived entities
 
----
-
-## 9) Mapping rules
-
-- AutoMapper lives in the Business project
-- Every entity-backed DTO must have:
-  - Entity → DTO mapping (read)
-  - DTO → Entity mapping (write)
-- Do not map navigation graphs implicitly
-- Queries must explicitly control shape and includes
+### Auditing
+- Audit fields are set in DbContext `SaveChanges` / `SaveChangesAsync`
+- Controllers MUST NOT set audit fields manually
 
 ---
 
-## 10) Repository & UnitOfWork rules
+## 7. Repository & UnitOfWork rules
 
-- All persistence operations go through Repository + UnitOfWork
-- Controllers must never call DbContext or repositories directly
-- Business services own persistence orchestration
-
----
-
-## 11) Database naming rules (mandatory)
-
-When adding or modifying EF Core entities/migrations:
-
-- Always use an explicit database schema.
-  - Default schema is `app` (do not create tables in `public`).
-- Always use plural table names.
-  - `Drink` -> `Drinks`, `Order` -> `Orders`, etc.
-- All tables must be plural (enforced by naming DbSet properties plural), unless explicitly overridden in mappings.
-  - Do NOT sprinkle `ToTable(...)` across entity files unless there’s an exceptional case.
-- If using Postgres row version concurrency:
-  - Expect EF/Npgsql to use `xmin`.
-  - Do not “fix” migrations just because you see `xmin`.
+- All persistence goes through Repository + UnitOfWork
+- Controllers MUST NOT access DbContext or repositories
+- UnitOfWork MUST be DbContext-centric:
+  - Expose generic `Repository<TEntity>()`
+  - Do NOT expose per-entity properties (e.g., `Drinks`)
 
 ---
 
-## 12) API → Entity reference exception
+## 8. DTO (Contracts) rules
 
-The Api project may reference the Entity project **only** for:
-- Calling Entity DI extension methods
-- EF Core CLI usage where Api is the startup project
-
-The Api project must NOT:
-- Call repositories or UnitOfWork directly
-- Implement persistence logic
-- Use entity types as API payloads
+- All DTOs mapped to persisted entities MUST inherit `BaseDto`
+- `BaseDto` lives in `BrosCode.LastCall.Contracts`
+- Entity project MUST NOT reference Contracts
+- Mapping is owned by Business
 
 ---
 
-## 13) Seeding rules
+## 9. EF Core & PostgreSQL conventions
 
-- Seed data is defined via JSON files
-- Location: `Api/Seed/`
-- File naming: `<EntityName>.json`
-
-Behavior:
-- Seed files are loaded during model creation using `HasData`
-- Missing seed files are skipped without failure
+- Default schema: `app`
+- Table names MUST be plural
+- Do NOT override table names unless required
+- Postgres row version uses `xmin` (this is expected)
 
 ---
 
-## 14) Audit rules
+## 10. Enforcement
 
-Audit is enforced at DbContext level:
-- Added entities: set `CreatedDate`
-- Added and modified entities: set `ModifiedDate`
-
-Audit fields must not be manually set in controllers.
-
----
-
-## 15) Agent execution checklist
-
-For any task such as “add entity”, “add service”, or “run migrations”, the agent must:
-
-1. Modify only the correct layer(s)
-2. Enforce `BaseEntity` / `BaseDto` rules
-3. Ensure `RowVersion` is configured correctly
-4. Add or update AutoMapper mappings
-5. Add or update validators if applicable
-6. Update DbContext configuration
-7. Run migrations if schema changes
-8. Run `dotnet build`
-9. Run `dotnet test` if tests exist
-10. Report what changed and what commands were executed
+Any violation of this document is considered a defect.
+If unsure, STOP and ask for clarification.
