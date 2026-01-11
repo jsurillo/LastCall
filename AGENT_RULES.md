@@ -159,7 +159,23 @@ DTO hierarchies are allowed as long as `BaseDto` exists in the chain.
 
 ---
 
-## 11) API → Entity reference exception
+## 11) Database naming rules (mandatory)
+
+When adding or modifying EF Core entities/migrations:
+
+- Always use an explicit database schema.
+  - Default schema is `app` (do not create tables in `public`).
+- Always use plural table names.
+  - `Drink` -> `Drinks`, `Order` -> `Orders`, etc.
+- Enforce schema + pluralization in ONE central place (DbContext model configuration).
+  - Do NOT sprinkle `ToTable(...)` across entity files unless there’s an exceptional case.
+- If using Postgres row version concurrency:
+  - Expect EF/Npgsql to use `xmin`.
+  - Do not “fix” migrations just because you see `xmin`.
+
+---
+
+## 12) API → Entity reference exception
 
 The Api project may reference the Entity project **only** for:
 - Calling Entity DI extension methods
@@ -172,7 +188,7 @@ The Api project must NOT:
 
 ---
 
-## 12) Seeding rules
+## 13) Seeding rules
 
 - Seed data is defined via JSON files
 - Location: `Api/Seed/`
@@ -184,7 +200,7 @@ Behavior:
 
 ---
 
-## 13) Audit rules
+## 14) Audit rules
 
 Audit is enforced at DbContext level:
 - Added entities: set `CreatedDate`
@@ -194,7 +210,7 @@ Audit fields must not be manually set in controllers.
 
 ---
 
-## 14) Agent execution checklist
+## 15) Agent execution checklist
 
 For any task such as “add entity”, “add service”, or “run migrations”, the agent must:
 

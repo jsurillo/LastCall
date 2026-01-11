@@ -146,6 +146,23 @@ dotnet ef database update -p src/BrosCode.LastCall.Entity/BrosCode.LastCall.Enti
 
 dotnet ef database update -p src/BrosCode.LastCall.Entity/BrosCode.LastCall.Entity.csproj -s src/BrosCode.LastCall.Api/BrosCode.LastCall.Api.csproj
 
+## Database conventions
+
+- Default schema: `App`
+- Table names: plural
+- Concurrency token: BaseEntity.RowVersion (Postgres uses `xmin`)
+
+## EF migrations (local dev)
+
+From repo root (or the folder containing the solution):
+
+- Add a migration:
+  - Use the Entity project as the migration project.
+  - Use the Api project as the startup project (so config + connection string resolve).
+
+- Update the database:
+  - Run the migration to apply schema + tables.
+
 ---
 
 ## 8) Build and run

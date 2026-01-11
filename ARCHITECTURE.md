@@ -75,6 +75,25 @@ Key rules:
 - Audit timestamps are applied in SaveChanges/SaveChangesAsync.
 - Provider configuration (UseNpgsql) belongs here, not in Api.
 
+## Entity persistence conventions (Postgres)
+
+### Schema rule (mandatory)
+- All tables MUST be created under an explicit schema (no implicit `public` tables).
+- Default schema for this app: `app`
+- DbContext MUST set a default schema via `modelBuilder.HasDefaultSchema("app")`.
+- Every entity MUST map to a table in that schema.
+
+### Table naming rule (mandatory)
+- Table names MUST be plural.
+  - Example: `Drink` entity -> `Drinks` table.
+- All tables must be plural (enforced by naming DbSet properties plural), unless explicitly overridden in mappings.
+
+### Concurrency / RowVersion rule (Postgres)
+- Every persisted entity inherits BaseEntity and contains `RowVersion`.
+- RowVersion MUST be configured as a concurrency token (row version).
+- On Postgres, EF/Npgsql uses the system column `xmin` to implement row version concurrency.
+  - Seeing `xmin` in migrations is expected and correct.
+
 ### BrosCode.LastCall.Infrastructure
 Purpose: cross-cutting, reusable code with no dependency on other projects.
 
