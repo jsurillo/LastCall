@@ -167,7 +167,7 @@ When adding or modifying EF Core entities/migrations:
   - Default schema is `app` (do not create tables in `public`).
 - Always use plural table names.
   - `Drink` -> `Drinks`, `Order` -> `Orders`, etc.
-- Enforce schema + pluralization in ONE central place (DbContext model configuration).
+- All tables must be plural (enforced by naming DbSet properties plural), unless explicitly overridden in mappings.
   - Do NOT sprinkle `ToTable(...)` across entity files unless there’s an exceptional case.
 - If using Postgres row version concurrency:
   - Expect EF/Npgsql to use `xmin`.
