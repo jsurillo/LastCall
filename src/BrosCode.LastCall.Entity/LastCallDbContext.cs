@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace BrosCode.LastCall.Entity;
@@ -28,6 +29,10 @@ public sealed class LastCallDbContext : DbContext
                 .Entity(entityType.ClrType)
                 .Property(nameof(BaseEntity.RowVersion))
                 .IsRowVersion();
+
+            modelBuilder
+                .Entity(entityType.ClrType)
+                .HasQueryFilter(BuildSoftDeleteFilter(entityType.ClrType));
         }
     }
 
@@ -58,8 +63,21 @@ public sealed class LastCallDbContext : DbContext
             }
             else if (entry.State == EntityState.Modified)
             {
+                if (entry.Entity.IsDeleted && entry.Entity.DeletedDate is null)
+                {
+                    entry.Entity.DeletedDate = utcNow;
+                }
+
                 entry.Entity.ModifiedDate = utcNow;
             }
         }
+    }
+
+    private static LambdaExpression BuildSoftDeleteFilter(Type entityClrType)
+    {
+        var parameter = Expression.Parameter(entityClrType, "entity");
+        var isDeletedProperty = Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
+        var compareExpression = Expression.Equal(isDeletedProperty, Expression.Constant(false));
+        return Expression.Lambda(compareExpression, parameter);
     }
 }

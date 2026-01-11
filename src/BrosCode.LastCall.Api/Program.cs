@@ -10,6 +10,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddDbContext<LastCallDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("LastCallDb")));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 
 var app = builder.Build();
 

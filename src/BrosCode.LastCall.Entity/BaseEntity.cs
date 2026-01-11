@@ -12,5 +12,9 @@ public abstract class BaseEntity
 
     public DateTime? ModifiedDate { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedDate { get; set; }
+
     public uint? RowVersion { get; set; }
 }
