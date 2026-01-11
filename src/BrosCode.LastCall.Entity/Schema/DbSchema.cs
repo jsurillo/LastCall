@@ -1,4 +1,4 @@
-namespace BrosCode.LastCall.Entity;
+namespace BrosCode.LastCall.Entity.Schema;
 
 public static class DbSchema
 {

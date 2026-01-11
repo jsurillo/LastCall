@@ -1,4 +1,6 @@
-using BrosCode.LastCall.Entity;
+using BrosCode.LastCall.Entity.DbContext;
+using BrosCode.LastCall.Entity.Repository;
+using BrosCode.LastCall.Entity.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 

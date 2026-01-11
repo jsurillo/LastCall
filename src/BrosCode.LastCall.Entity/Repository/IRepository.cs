@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
+using BrosCode.LastCall.Entity;
 
-namespace BrosCode.LastCall.Entity;
+namespace BrosCode.LastCall.Entity.Repository;
 
 public interface IRepository<TEntity> where TEntity : BaseEntity
 {

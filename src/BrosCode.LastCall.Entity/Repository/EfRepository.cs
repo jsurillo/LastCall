@@ -1,7 +1,9 @@
 using System.Linq.Expressions;
+using BrosCode.LastCall.Entity;
+using BrosCode.LastCall.Entity.DbContext;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrosCode.LastCall.Entity;
+namespace BrosCode.LastCall.Entity.Repository;
 
 public sealed class EfRepository<TEntity> : IRepository<TEntity> where TEntity : BaseEntity
 {

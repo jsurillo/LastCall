@@ -1,4 +1,7 @@
-namespace BrosCode.LastCall.Entity;
+using BrosCode.LastCall.Entity;
+using BrosCode.LastCall.Entity.Repository;
+
+namespace BrosCode.LastCall.Entity.UnitOfWork;
 
 public interface IUnitOfWork
 {

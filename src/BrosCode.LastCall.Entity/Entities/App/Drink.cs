@@ -1,4 +1,6 @@
-namespace BrosCode.LastCall.Entity;
+using BrosCode.LastCall.Entity;
+
+namespace BrosCode.LastCall.Entity.Entities.App;
 
 public sealed class Drink : BaseEntity
 {

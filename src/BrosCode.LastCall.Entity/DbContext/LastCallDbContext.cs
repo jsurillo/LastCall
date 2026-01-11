@@ -1,11 +1,14 @@
 using System.Linq.Expressions;
+using BrosCode.LastCall.Entity;
+using BrosCode.LastCall.Entity.Entities.App;
+using BrosCode.LastCall.Entity.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrosCode.LastCall.Entity;
+namespace BrosCode.LastCall.Entity.DbContext;
 
-public sealed class LastCallDbContext : DbContext
+public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
 {
-    public LastCallDbContext(DbContextOptions<LastCallDbContext> options)
+    public LastCallDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<LastCallDbContext> options)
         : base(options)
     {
     }
