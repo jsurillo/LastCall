@@ -1,4 +1,6 @@
 using BrosCode.LastCall.Business.Mapping;
+using BrosCode.LastCall.Business.Services.App;
+using BrosCode.LastCall.Business.Services.Base;
 using BrosCode.LastCall.Entity.DbContext;
 using BrosCode.LastCall.Entity.Repository;
 using BrosCode.LastCall.Entity.UnitOfWork;
@@ -12,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(LastCallMappingProfile).Assembly);
+builder.Services.AddScoped(typeof(IGenericEntityService<,>), typeof(GenericEntityService<,>));
+builder.Services.AddScoped<DrinkService>();
 builder.Services.AddDbContext<LastCallDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("LastCallDb")));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
