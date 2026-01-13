@@ -37,13 +37,13 @@ This is the highest authority for implementation decisions in this repository.
      - Contracts
 
 6. **No secrets in repository**
-   - Use environment variables, user-secrets, or excluded config files
+   - Use environment variables, user-secrets, or excluded local config files
 
 ---
 
-## 2. Solution structure (fixed)
+## 2. Solution structure (fixed, with tooling exception)
 
-The solution MUST contain exactly these projects:
+The solution MUST contain these core projects:
 
 - BrosCode.LastCall.Api
 - BrosCode.LastCall.Business
@@ -52,8 +52,25 @@ The solution MUST contain exactly these projects:
 - BrosCode.LastCall.Infrastructure
 
 Rules:
-- No additional projects without explicit approval
 - Namespaces MUST match project and folder structure
+- No additional projects **except** the tooling exception below
+
+### Tooling exception (explicitly approved)
+One additional project is allowed for **design-time tooling only** (migration-time generators, codegen, etc.):
+
+- Allowed tooling project name (recommended): `BrosCode.LastCall.MigrationsGen`
+
+Tooling rules:
+- Tooling project MUST NOT be required at runtime (Api must run without it).
+- Tooling project MUST NOT introduce runtime dependencies into Api/Business/Entity.
+- Tooling project MUST NOT be referenced by Api or Business.
+- Tooling project MAY reference:
+  - Entity (optional, only if needed)
+  - Infrastructure (optional)
+- Tooling project MUST NOT reference:
+  - Api (as a project reference)
+  - Contracts
+- Tooling project reads Api artifacts (e.g., Seed JSON, SqlObjects) via filesystem paths only.
 
 ---
 
@@ -145,7 +162,8 @@ All persisted entities MUST inherit `BaseEntity`.
 
 ## 9. EF Core & PostgreSQL conventions
 
-- Default schema: `app`
+- The application supports **multiple database schemas**
+- Every table MUST be mapped to an explicit schema (do not rely on `public`)
 - Table names MUST be plural
 - Do NOT override table names unless required
 - Postgres row version uses `xmin` (this is expected)
