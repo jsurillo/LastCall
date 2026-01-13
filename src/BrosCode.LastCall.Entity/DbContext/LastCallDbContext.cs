@@ -7,7 +7,7 @@ namespace BrosCode.LastCall.Entity.DbContext;
 
 public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
 {
-    public LastCallDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<LastCallDbContext> options)
+    public LastCallDbContext(DbContextOptions<LastCallDbContext> options)
         : base(options)
     {
     }
