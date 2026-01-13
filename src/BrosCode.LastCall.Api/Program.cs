@@ -1,3 +1,4 @@
+using BrosCode.LastCall.Business.Mapping;
 using BrosCode.LastCall.Entity.DbContext;
 using BrosCode.LastCall.Entity.Repository;
 using BrosCode.LastCall.Entity.UnitOfWork;
@@ -10,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddAutoMapper(typeof(LastCallMappingProfile).Assembly);
 builder.Services.AddDbContext<LastCallDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("LastCallDb")));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
