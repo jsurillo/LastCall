@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using BrosCode.LastCall.Entity;
 
 namespace BrosCode.LastCall.Entity.Repository;
 

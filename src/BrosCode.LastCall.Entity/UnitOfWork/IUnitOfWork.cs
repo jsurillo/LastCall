@@ -1,4 +1,3 @@
-using BrosCode.LastCall.Entity;
 using BrosCode.LastCall.Entity.Repository;
 
 namespace BrosCode.LastCall.Entity.UnitOfWork;

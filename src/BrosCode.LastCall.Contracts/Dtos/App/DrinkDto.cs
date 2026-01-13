@@ -1,5 +1,3 @@
-using BrosCode.LastCall.Contracts;
-
 namespace BrosCode.LastCall.Contracts.Dtos.App;
 
 public sealed class DrinkDto : BaseDto

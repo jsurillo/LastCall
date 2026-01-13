@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using BrosCode.LastCall.Entity;
 using BrosCode.LastCall.Entity.Entities.App;
 using BrosCode.LastCall.Entity.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +19,7 @@ public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasDefaultSchema(DbSchema.Default);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(LastCallDbContext).Assembly);
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -27,6 +27,13 @@ public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
             {
                 continue;
             }
+
+            var builder = modelBuilder.Entity(entityType.ClrType);
+            builder.Property(nameof(BaseEntity.CreatedBy))
+                .HasMaxLength(200);
+
+            builder.Property(nameof(BaseEntity.ModifiedBy))
+                .HasMaxLength(200);
 
             modelBuilder
                 .Entity(entityType.ClrType)
@@ -66,7 +73,7 @@ public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
             }
             else if (entry.State == EntityState.Modified)
             {
-                if (entry.Entity.IsDeleted && entry.Entity.DeletedDate is null)
+                if (entry.Entity is { IsDeleted: true, DeletedDate: null })
                 {
                     entry.Entity.DeletedDate = utcNow;
                 }
