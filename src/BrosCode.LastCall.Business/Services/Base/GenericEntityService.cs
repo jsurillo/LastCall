@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Linq.Expressions;
 using AutoMapper;
 using BrosCode.LastCall.Contracts;
@@ -54,12 +53,7 @@ public class GenericEntityService<TDto, TEntity> : IGenericEntityService<TDto, T
 
     public async Task UpdateAsync(Guid id, TDto dto, CancellationToken ct = default)
     {
-        var entity = await _repository.GetByIdAsync(id, ct);
-        if (entity is null)
-        {
-            throw new KeyNotFoundException($"{typeof(TEntity).Name} with id '{id}' was not found.");
-        }
-
+        var entity = await _repository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException($"{typeof(TEntity).Name} with id '{id}' was not found.");
         _mapper.Map(dto, entity);
         entity.Id = id;
         _repository.Update(entity);
@@ -67,11 +61,7 @@ public class GenericEntityService<TDto, TEntity> : IGenericEntityService<TDto, T
 
     public async Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _repository.GetByIdAsync(id, ct);
-        if (entity is null)
-        {
-            throw new KeyNotFoundException($"{typeof(TEntity).Name} with id '{id}' was not found.");
-        }
+        var entity = await _repository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException($"{typeof(TEntity).Name} with id '{id}' was not found.");
 
         entity.IsDeleted = true;
         entity.DeletedDate = DateTime.UtcNow;
@@ -80,12 +70,7 @@ public class GenericEntityService<TDto, TEntity> : IGenericEntityService<TDto, T
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _repository.GetByIdAsync(id, ct);
-        if (entity is null)
-        {
-            throw new KeyNotFoundException($"{typeof(TEntity).Name} with id '{id}' was not found.");
-        }
-
+        var entity = await _repository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException($"{typeof(TEntity).Name} with id '{id}' was not found.");
         _repository.HardDelete(entity);
     }
 

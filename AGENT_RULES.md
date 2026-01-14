@@ -188,7 +188,23 @@ Usage:
 
 ---
 
-## 11. Enforcement
+## 11. Interface documentation (MANDATORY)
+
+- Every public interface MUST include XML documentation using `///`.
+- Every interface MUST have a `<summary>` describing:
+  - its responsibility
+  - the layer it belongs to
+  - how it is intended to be used
+- Every public method on an interface MUST also have a `<summary>`.
+
+Rules:
+- Documentation must be concise and intentional.
+- Do NOT document implementation details.
+- Do NOT add XML docs to private/internal classes unless explicitly requested.
+
+---
+
+## 12. Enforcement
 
 Any violation of this document is considered a defect.
 If unsure, STOP and ask for clarification.
