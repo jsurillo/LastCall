@@ -170,7 +170,25 @@ All persisted entities MUST inherit `BaseEntity`.
 
 ---
 
-## 10. Enforcement
+## 10. Controller route naming rules
+
+- URL paths MUST use nouns only.
+- HTTP verbs express intent (GET, POST, PUT, DELETE).
+- Route names are INTERNAL identifiers and are not part of the URL.
+
+Naming rules:
+- Only routes that represent a single resource identity are named.
+- Pattern: <ResourceName>ById
+  Example: DrinkById, UserById, OrderById
+- Collection routes and non-identity routes MUST NOT be named.
+
+Usage:
+- POST endpoints that create resources MUST return:
+  CreatedAtRoute("<ResourceName>ById", new { id = created.Id }, created)
+
+---
+
+## 11. Enforcement
 
 Any violation of this document is considered a defect.
 If unsure, STOP and ask for clarification.

@@ -1,9 +1,11 @@
+using System.ComponentModel;
 using System.Linq.Expressions;
 using AutoMapper;
 using BrosCode.LastCall.Contracts;
 using BrosCode.LastCall.Entity;
 using BrosCode.LastCall.Entity.Repository;
 using BrosCode.LastCall.Entity.UnitOfWork;
+using MassTransit;
 
 namespace BrosCode.LastCall.Business.Services.Base;
 
@@ -44,6 +46,7 @@ public class GenericEntityService<TDto, TEntity> : IGenericEntityService<TDto, T
 
     public async Task<TDto> AddAsync(TDto dto, CancellationToken ct = default)
     {
+        dto.Id = dto.Id == Guid.Empty ? NewId.NextGuid() : dto.Id;
         var entity = _mapper.Map<TEntity>(dto);
         await _repository.AddAsync(entity, ct);
         return _mapper.Map<TDto>(entity);
