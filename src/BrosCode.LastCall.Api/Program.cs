@@ -1,7 +1,9 @@
+using BrosCode.LastCall.Api.Services;
 using BrosCode.LastCall.Business.Mapping;
 using BrosCode.LastCall.Business.Services.App;
 using BrosCode.LastCall.Business.Services.Base;
 using BrosCode.LastCall.Entity.DbContext;
+using BrosCode.LastCall.Entity.Identity;
 using BrosCode.LastCall.Entity.Repository;
 using BrosCode.LastCall.Entity.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,8 @@ builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(LastCallMappingProfile).Assembly);
 builder.Services.AddScoped(typeof(IGenericEntityService<,>), typeof(GenericEntityService<,>));
 builder.Services.AddScoped<DrinkService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserAccessor, HttpContextCurrentUserAccessor>();
 builder.Services.AddDbContext<LastCallDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("LastCallDb")));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

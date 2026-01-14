@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using BrosCode.LastCall.Entity.Entities.App;
+using BrosCode.LastCall.Entity.Identity;
 using BrosCode.LastCall.Entity.Schema;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,9 +8,21 @@ namespace BrosCode.LastCall.Entity.DbContext;
 
 public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
 {
+    private const string SystemUser = "system";
+    private readonly ICurrentUserAccessor _currentUserAccessor;
+
     public LastCallDbContext(DbContextOptions<LastCallDbContext> options)
         : base(options)
     {
+        _currentUserAccessor = new NullCurrentUserAccessor();
+    }
+
+    public LastCallDbContext(
+        DbContextOptions<LastCallDbContext> options,
+        ICurrentUserAccessor currentUserAccessor)
+        : base(options)
+    {
+        _currentUserAccessor = currentUserAccessor;
     }
 
     public DbSet<Drink> Drinks => Set<Drink>();
@@ -63,6 +76,7 @@ public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
     private void ApplyAuditInfo()
     {
         var utcNow = DateTime.UtcNow;
+        var currentUser = GetCurrentUser();
 
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
@@ -70,15 +84,30 @@ public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
             {
                 entry.Entity.CreatedDate = utcNow;
                 entry.Entity.ModifiedDate = utcNow;
+                entry.Entity.CreatedBy = currentUser;
+                entry.Entity.ModifiedBy = currentUser;
+                entry.Entity.DeletedDate = entry.Entity.IsDeleted ? utcNow : null;
             }
             else if (entry.State == EntityState.Modified)
             {
-                if (entry.Entity is { IsDeleted: true, DeletedDate: null })
-                {
-                    entry.Entity.DeletedDate = utcNow;
-                }
+                entry.Property(nameof(BaseEntity.CreatedDate)).IsModified = false;
+                entry.Property(nameof(BaseEntity.CreatedBy)).IsModified = false;
+                entry.Property(nameof(BaseEntity.RowVersion)).IsModified = false;
+                entry.Property(nameof(BaseEntity.ModifiedDate)).IsModified = false;
+                entry.Property(nameof(BaseEntity.ModifiedBy)).IsModified = false;
 
                 entry.Entity.ModifiedDate = utcNow;
+                entry.Entity.ModifiedBy = currentUser;
+
+                if (entry.Entity.IsDeleted)
+                {
+                    entry.Entity.DeletedDate ??= utcNow;
+                    entry.Property(nameof(BaseEntity.DeletedDate)).IsModified = true;
+                }
+                else
+                {
+                    entry.Property(nameof(BaseEntity.DeletedDate)).IsModified = false;
+                }
             }
         }
     }
@@ -89,5 +118,16 @@ public sealed class LastCallDbContext : Microsoft.EntityFrameworkCore.DbContext
         var isDeletedProperty = Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
         var compareExpression = Expression.Equal(isDeletedProperty, Expression.Constant(false));
         return Expression.Lambda(compareExpression, parameter);
+    }
+
+    private string GetCurrentUser()
+    {
+        var user = _currentUserAccessor.UserNameOrId;
+        return string.IsNullOrWhiteSpace(user) ? SystemUser : user;
+    }
+
+    private sealed class NullCurrentUserAccessor : ICurrentUserAccessor
+    {
+        public string? UserNameOrId => null;
     }
 }

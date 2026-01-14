@@ -17,6 +17,8 @@ public sealed class LastCallMappingProfile : Profile
         where TEntity : BaseEntity
         where TDto : BaseDto
     {
-        CreateMap<TEntity, TDto>().ReverseMap();
+        CreateMap<TEntity, TDto>()
+            .ReverseMap()
+            .IgnoreAuditMembers();
     }
 }
